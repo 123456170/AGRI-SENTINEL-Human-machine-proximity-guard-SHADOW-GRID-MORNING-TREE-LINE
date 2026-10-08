@@ -3,13 +3,10 @@
 AGRI//SENTINEL
 Human-Machine Proximity Guard for Agricultural Machinery Safety
 
-Single-file Streamlit application.
-Runs an automatic live demo simulation immediately on launch.
-
-Pipeline:
-  synthetic farm world -> detector -> multi-object tracker -> trajectory predictor
-  -> dynamic safety zones -> TTC / crossing / risk engine -> event register
-  -> heatmap -> online MOT metrics -> Streamlit control room
+FIXED VERSION: 
+- Resolved 'Black Screen' issue by correcting CSS scope and contrast.
+- Ensured text visibility regardless of background gradients.
+- Safe header hiding without breaking layout.
 """
 
 from __future__ import annotations
@@ -386,13 +383,6 @@ TRAFFIC_LUT = make_lut([
 # ===================================================================================
 
 class Projector:
-    """
-    Lightweight synthetic camera projection.
-    World coordinates:
-      x in [0, FIELD_W]
-      y in [0, FIELD_H], where y=0 is near camera and y=FIELD_H is far.
-    """
-
     def g2c(self, x: float, y: float) -> Tuple[float, float, float]:
         x = safe_float(x, FIELD_W * 0.5)
         y = safe_float(y, FIELD_H * 0.5)
@@ -2849,78 +2839,163 @@ def draw_camera(engine: Engine) -> Image.Image:
 # HTML HELPERS
 # ===================================================================================
 
+# FIXED CSS: Removed aggressive display:none on headers. 
+# Forced high-contrast text colors to prevent black-on-black issues.
 CSS = """
+/* Import Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-:root{--void:#080B09;--panel:#0E1411;--edge:rgba(178,214,188,.11);--ink:#E9F1EA;--dim:#93AAA0;--faint:#5F7268;--amber:#FFB020;--cyan:#39D7F2;--violet:#C79BFF;--safe:#48D68C;--cau:#FFC542;--high:#FF7A33;--crit:#FF3B54;--disp:'Chakra Petch','Arial Narrow',sans-serif;--body:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',Consolas,monospace;}
-html,body{font-family:var(--body);}
-.stApp{background:radial-gradient(1100px 520px at 12% -8%, rgba(255,176,32,.07), transparent 60%),radial-gradient(900px 480px at 96% 4%, rgba(57,215,242,.06), transparent 62%),repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px),linear-gradient(180deg,#090D0B 0%, #080B09 40%, #070A08 100%);color:var(--ink);}
-header,footer,[data-testid="stDecoration"],[data-testid="stToolbar"],#MainMenu{display:none!important;visibility:hidden;}
-.block-container{padding:0.6rem 1.0rem 2.2rem 1.0rem;max-width:1720px;}
-[data-testid="stSidebar"]{background:linear-gradient(180deg,#0B100E,#080C0A);border-right:1px solid var(--edge);}
-[data-testid="stSidebar"] .block-container{padding-top:.35rem;}
-.as-hdr{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;border-bottom:1px solid var(--edge);padding:6px 2px 10px;margin-bottom:10px;position:relative;}
-.as-hdr::after{content:"";position:absolute;left:0;bottom:-1px;height:1px;width:34%;background:linear-gradient(90deg,var(--amber),transparent);animation:sweep 6s linear infinite;}
-@keyframes sweep{0%{transform:translateX(0);opacity:.9}50%{opacity:.35}100%{transform:translateX(190%);opacity:.9}}
-.mark{font-family:var(--disp);font-weight:700;font-size:30px;line-height:.95;letter-spacing:.06em;color:var(--ink);}
-.mark i{font-style:normal;color:var(--amber);}.mark b{color:var(--cyan);font-weight:700;}
-.sub{font-family:var(--mono);font-size:10px;letter-spacing:.20em;color:var(--faint);text-transform:uppercase;margin-top:3px;}
-.hspacer{flex:1;}
-.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;padding:5px 9px;border:1px solid var(--edge);background:rgba(255,255,255,.022);color:var(--dim);border-radius:3px;white-space:nowrap;}
-.chip u{text-decoration:none;color:var(--ink);font-weight:500;}.chip.live{border-color:rgba(255,59,84,.5);color:#ffd9de;background:rgba(255,59,84,.09);}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--crit);box-shadow:0 0 0 0 rgba(255,59,84,.6);animation:pulse 1.5s infinite;}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,59,84,.55)}70%{box-shadow:0 0 0 8px rgba(255,59,84,0)}100%{box-shadow:0 0 0 0 rgba(255,59,84,0)}}
-.panel{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.028),rgba(255,255,255,.006));border:1px solid var(--edge);border-radius:4px;margin-bottom:10px;transition:border-color .25s, transform .25s;}
-.panel:hover{border-color:rgba(255,176,32,.28);}
-.panel>.tick{position:absolute;width:9px;height:9px;border:1px solid rgba(255,176,32,.5);pointer-events:none;}
-.tk1{top:-1px;left:-1px;border-right:0;border-bottom:0}.tk2{top:-1px;right:-1px;border-left:0;border-bottom:0}.tk3{bottom:-1px;left:-1px;border-right:0;border-top:0}.tk4{bottom:-1px;right:-1px;border-left:0;border-top:0}
-.ph{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:7px 11px;border-bottom:1px solid var(--edge);background:rgba(255,255,255,.02);}
-.ph span{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:#DCE8DE;}
-.ph em{font-family:var(--mono);font-style:normal;font-size:9.5px;letter-spacing:.13em;color:var(--faint);text-transform:uppercase;}
-.pb{padding:10px 11px}.pb.tight{padding:7px 8px;}
-img.feed{display:block;width:100%;border-radius:3px;border:1px solid rgba(255,255,255,.07);}
-.k{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);}
-.v{font-family:var(--disp);font-weight:700;color:var(--ink);}
-.big{font-family:var(--disp);font-weight:700;font-size:40px;line-height:.92;}
-.mid{font-family:var(--disp);font-weight:700;font-size:20px;line-height:1;}
-.mono{font-family:var(--mono);font-size:11.5px;color:var(--dim);}
-.lv0{color:var(--safe)}.lv1{color:var(--cau)}.lv2{color:var(--high)}.lv3{color:var(--crit)}
-.bg0{background:var(--safe)}.bg1{background:var(--cau)}.bg2{background:var(--high)}.bg3{background:var(--crit)}
-.lvt{display:inline-block;font-family:var(--disp);font-weight:700;font-size:10.5px;letter-spacing:.13em;padding:2px 7px;border-radius:2px;color:#0A0D0B;}
-.row{display:flex;align-items:center;gap:8px;padding:6px 7px;border-left:2px solid transparent;transition:.18s;border-radius:2px;}
-.row:hover{background:rgba(255,255,255,.045);border-left-color:var(--amber);transform:translateX(2px);}
-.row .nm{font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:.05em;min-width:52px;}
-.row .mt{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-left:auto;white-space:nowrap;}
-.bar{height:5px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;position:relative;margin:3px 0 7px;}
-.bar>i{display:block;height:100%;border-radius:2px;transition:width .35s cubic-bezier(.3,.9,.3,1);}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px;}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
-.cell{border:1px solid var(--edge);border-radius:3px;padding:7px 8px;background:rgba(255,255,255,.018);transition:.2s;}.cell:hover{background:rgba(255,176,32,.06);border-color:rgba(255,176,32,.3);}
-.tickwrap{overflow:hidden;border:1px solid var(--edge);border-radius:3px;background:rgba(255,255,255,.02);height:28px;position:relative;margin-bottom:10px;}
-.ticklab{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;padding:0 10px;z-index:2;background:#0C110F;border-right:1px solid var(--edge);font-family:var(--disp);font-size:10.5px;letter-spacing:.18em;color:var(--amber);}
-.tickrun{display:flex;align-items:center;height:100%;white-space:nowrap;animation:run 42s linear infinite;padding-left:120px;}
-@keyframes run{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.tickrun span{font-family:var(--mono);font-size:11px;color:var(--dim);padding:0 16px;border-right:1px solid rgba(255,255,255,.06);}.tickrun span b{color:var(--ink);font-weight:500;}
-.lg{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}.lg .b{font-family:var(--mono);font-size:10px;letter-spacing:.10em;text-transform:uppercase;padding:4px 8px;border:1px solid var(--edge);border-radius:2px;color:var(--faint);}.lg .b.on{color:#0A0D0B;font-weight:600;}
-.crit{border:1px solid rgba(255,59,84,.55);background:linear-gradient(90deg,rgba(255,59,84,.20),rgba(255,59,84,.05));border-radius:3px;padding:8px 12px;display:flex;align-items:center;gap:12px;animation:flash 1.1s ease-in-out infinite;}
-@keyframes flash{0%,100%{box-shadow:0 0 0 0 rgba(255,59,84,0)}50%{box-shadow:0 0 22px -4px rgba(255,59,84,.55)}}
-[data-testid="stTabs"] [data-baseweb="tab-list"]{gap:2px;border-bottom:1px solid var(--edge);}
-[data-testid="stTabs"] button{font-family:var(--disp)!important;font-weight:600!important;letter-spacing:.13em!important;font-size:11.5px!important;text-transform:uppercase!important;color:var(--faint)!important;padding:6px 14px!important;background:transparent;border-radius:3px 3px 0 0;}
-[data-testid="stTabs"] button:hover{color:var(--ink)!important;background:rgba(255,255,255,.04);}[data-testid="stTabs"] [aria-selected="true"]{color:#0A0D0B!important;background:var(--amber)!important;}
-.stButton>button,.stDownloadButton>button{font-family:var(--disp)!important;font-weight:600!important;letter-spacing:.12em!important;text-transform:uppercase!important;font-size:11.5px!important;border-radius:3px!important;border:1px solid var(--edge)!important;background:rgba(255,255,255,.03)!important;color:var(--ink)!important;padding:6px 10px!important;min-height:32px!important;transition:.18s!important;width:100%;}
-.stButton>button:hover,.stDownloadButton>button:hover{background:rgba(255,176,32,.14)!important;border-color:var(--amber)!important;color:#FFE2AE!important;transform:translateY(-1px);}
-label{font-family:var(--mono)!important;font-size:10.5px!important;letter-spacing:.12em!important;text-transform:uppercase!important;color:var(--dim)!important;}
-.sec{font-family:var(--disp);font-weight:700;font-size:11.5px;letter-spacing:.19em;text-transform:uppercase;color:var(--amber);margin:14px 0 4px;padding-bottom:4px;border-bottom:1px solid var(--edge);}.sec:first-child{margin-top:2px;}
-.hint{font-family:var(--body);font-size:11.5px;color:var(--faint);line-height:1.5;margin:4px 0 2px;}
-table.dt{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}table.dt th{text-align:left;font-family:var(--disp);font-weight:600;letter-spacing:.12em;font-size:9.5px;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--edge);padding:5px 7px;}table.dt td{padding:5px 7px;border-bottom:1px solid rgba(255,255,255,.045);color:var(--dim);}table.dt tr:hover td{background:rgba(255,255,255,.035);color:var(--ink);}
-.flow{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;}.fbox{flex:1;min-width:118px;border:1px solid var(--edge);border-left:2px solid var(--amber);border-radius:3px;padding:8px;background:rgba(255,255,255,.02);transition:.2s;}.fbox:hover{transform:translateY(-2px);border-left-color:var(--cyan);background:rgba(57,215,242,.06);}.fbox h5{margin:0 0 3px;font-family:var(--disp);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--ink);}.fbox p{margin:0;font-family:var(--mono);font-size:10px;color:var(--faint);line-height:1.45;}
-@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;}}
+
+:root {
+ --void:#080B09;
+ --panel:#0E1411;
+ --edge:rgba(178,214,188,.11);
+ --ink:#E9F1EA; /* Bright White/Grey for readability */
+ --dim:#93AAA0;
+ --faint:#5F7268;
+ --amber:#FFB020;
+ --cyan:#39D7F2;
+ --violet:#C79BFF;
+ --safe:#48D68C;
+ --cau:#FFC542;
+ --high:#FF7A33;
+ --crit:#FF3B54;
+ --disp:'Chakra Petch','Arial Narrow',sans-serif;
+ --body:'IBM Plex Sans',system-ui,sans-serif;
+ --mono:'IBM Plex Mono',Consolas,monospace;
+}
+
+/* Global Reset for Contrast */
+html, body, .stApp {
+    font-family: var(--body);
+    color: var(--ink) !important; /* Force bright text everywhere */
+}
+
+.stApp {
+    background: #080B09 !important; /* Solid dark fallback */
+    background-image: radial-gradient(1100px 520px at 12% -8%, rgba(255,176,32,.07), transparent 60%),
+                      radial-gradient(900px 480px at 96% 4%, rgba(57,215,242,.06), transparent 62%),
+                      repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0 1px, transparent 1px 3px),
+                      linear-gradient(180deg,#090D0B 0%, #080B09 40%, #070A08 100%) !important;
+}
+
+/* Hide Streamlit Branding Safely (Opacity trick instead of Display None to avoid layout shifts) */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    opacity: 0.1 !important;
+    pointer-events: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+footer[data-testid="stFooter"] {
+    display: none !important;
+}
+#MainMenu { visibility: hidden; }
+[data-testid="stToolbar"] { visibility: hidden; }
+
+.block-container {
+    padding-top: 1rem !important;
+    max-width: 1720px;
+}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background: #0B100E !important;
+    border-right: 1px solid var(--edge);
+}
+[data-testid="stSidebar"] .block-container {
+    padding-top: 1rem;
+}
+[data-testid="stSidebar"] * {
+    color: var(--ink) !important;
+}
+
+/* Typography Helpers */
+.mark { font-family: var(--disp); font-weight: 700; font-size: 28px; line-height: 1.1; letter-spacing: 0.05em; color: var(--ink); margin-bottom: 4px;}
+.mark i { font-style: normal; color: var(--amber); }
+.mark b { color: var(--cyan); font-weight: 700; }
+.sub { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; color: var(--faint); text-transform: uppercase; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 8px; border: 1px solid var(--edge); background: rgba(255,255,255,0.03); color: var(--dim); border-radius: 3px; white-space: nowrap; }
+.chip u { text-decoration: none; color: var(--ink); font-weight: 500; }
+.chip.live { border-color: rgba(255,59,84,0.5); color: #ffd9de; background: rgba(255,59,84,0.1); }
+
+.panel { position: relative; background: rgba(255,255,255,0.02); border: 1px solid var(--edge); border-radius: 4px; margin-bottom: 10px; transition: border-color 0.2s; }
+.panel:hover { border-color: rgba(255,176,32,0.3); }
+.ph { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 10px; border-bottom: 1px solid var(--edge); background: rgba(255,255,255,0.01); }
+.ph span { font-family: var(--disp); font-weight: 600; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #DCE8DE; }
+.ph em { font-family: var(--mono); font-style: normal; font-size: 9px; letter-spacing: 0.1em; color: var(--faint); text-transform: uppercase; }
+.pb { padding: 8px 10px; }
+
+img.feed { display: block; width: 100%; border-radius: 3px; border: 1px solid rgba(255,255,255,0.05); }
+
+.k { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+.v { font-family: var(--disp); font-weight: 700; color: var(--ink); }
+.big { font-family: var(--disp); font-weight: 700; font-size: 32px; line-height: 1; color: var(--ink); }
+.mid { font-family: var(--disp); font-weight: 700; font-size: 18px; line-height: 1; color: var(--ink); }
+.mono { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+
+.lv0 { color: var(--safe); } .lv1 { color: var(--cau); } .lv2 { color: var(--high); } .lv3 { color: var(--crit); }
+.bg0 { background: var(--safe); } .bg1 { background: var(--cau); } .bg2 { background: var(--high); } .bg3 { background: var(--crit); }
+.lvt { display: inline-block; font-family: var(--disp); font-weight: 700; font-size: 10px; letter-spacing: 0.1em; padding: 2px 6px; border-radius: 2px; color: #000; }
+
+.row { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-left: 2px solid transparent; transition: 0.2s; border-radius: 2px; }
+.row:hover { background: rgba(255,255,255,0.03); border-left-color: var(--amber); }
+.row .nm { font-family: var(--disp); font-weight: 600; font-size: 12px; letter-spacing: 0.05em; min-width: 40px; color: var(--ink); }
+.row .mt { font-family: var(--mono); font-size: 10px; color: var(--dim); margin-left: auto; white-space: nowrap; }
+.bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.05); overflow: hidden; position: relative; margin: 2px 0 4px; }
+.bar > i { display: block; height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cell { border: 1px solid var(--edge); border-radius: 3px; padding: 6px; background: rgba(255,255,255,0.01); }
+.cell:hover { background: rgba(255,176,32,0.05); border-color: rgba(255,176,32,0.2); }
+
+.tickwrap { overflow: hidden; border: 1px solid var(--edge); border-radius: 3px; background: rgba(255,255,255,0.01); height: 24px; position: relative; margin-bottom: 8px; }
+.ticklab { position: absolute; left: 0; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 8px; z-index: 2; background: #0C110F; border-right: 1px solid var(--edge); font-family: var(--disp); font-size: 9px; letter-spacing: 0.1em; color: var(--amber); }
+.tickrun { display: flex; align-items: center; height: 100%; white-space: nowrap; animation: run 30s linear infinite; padding-left: 100px; }
+@keyframes run { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.tickrun span { font-family: var(--mono); font-size: 10px; color: var(--dim); padding: 0 12px; border-right: 1px solid rgba(255,255,255,0.05); }
+.tickrun span b { color: var(--ink); font-weight: 500; }
+
+.lg { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.lg .b { font-family: var(--mono); font-size: 9px; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 6px; border: 1px solid var(--edge); border-radius: 2px; color: var(--faint); }
+.lg .b.on { color: #000; font-weight: 600; }
+
+.crit-banner { border: 1px solid rgba(255,59,84,0.5); background: linear-gradient(90deg, rgba(255,59,84,0.15), rgba(255,59,84,0.05)); border-radius: 3px; padding: 6px 10px; display: flex; align-items: center; gap: 10px; animation: flash 1.5s ease-in-out infinite; }
+@keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,59,84,0); } 50% { box-shadow: 0 0 15px -2px rgba(255,59,84,0.4); } }
+
+[data-testid="stTabs"] button { font-family: var(--disp) !important; font-weight: 600 !important; letter-spacing: 0.1em !important; font-size: 10px !important; text-transform: uppercase !important; color: var(--faint) !important; padding: 4px 10px !important; background: transparent !important; border: none !important; border-bottom: 2px solid transparent !important; }
+[data-testid="stTabs"] button:hover { color: var(--ink) !important; }
+[data-testid="stTabs"] [aria-selected="true"] { color: #000 !important; background: var(--amber) !important; border-bottom: 2px solid var(--amber) !important; }
+
+.stButton > button, .stDownloadButton > button { font-family: var(--disp) !important; font-weight: 600 !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; font-size: 10px !important; border-radius: 3px !important; border: 1px solid var(--edge) !important; background: rgba(255,255,255,0.02) !important; color: var(--ink) !important; padding: 4px 8px !important; min-height: 28px !important; transition: 0.2s !important; width: 100%; }
+.stButton > button:hover, .stDownloadButton > button:hover { background: rgba(255,176,32,0.1) !important; border-color: var(--amber) !important; color: #FFE2AE !important; }
+
+label { font-family: var(--mono) !important; font-size: 10px !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; color: var(--dim) !important; }
+.sec { font-family: var(--disp); font-weight: 700; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--amber); margin: 12px 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--edge); }
+.sec:first-child { margin-top: 4px; }
+.hint { font-family: var(--body); font-size: 10px; color: var(--faint); line-height: 1.4; margin: 4px 0 2px; }
+
+table.dt { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 10px; }
+table.dt th { text-align: left; font-family: var(--disp); font-weight: 600; letter-spacing: 0.1em; font-size: 9px; text-transform: uppercase; color: var(--faint); border-bottom: 1px solid var(--edge); padding: 4px 6px; }
+table.dt td { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--dim); }
+table.dt tr:hover td { background: rgba(255,255,255,0.02); color: var(--ink); }
+
+.flow { display: flex; gap: 4px; flex-wrap: wrap; align-items: stretch; }
+.fbox { flex: 1; min-width: 100px; border: 1px solid var(--edge); border-left: 2px solid var(--amber); border-radius: 3px; padding: 6px; background: rgba(255,255,255,0.01); transition: 0.2s; }
+.fbox:hover { transform: translateY(-1px); border-left-color: var(--cyan); background: rgba(57,215,242,0.03); }
+.fbox h5 { margin: 0 0 2px; font-family: var(--disp); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.fbox p { margin: 0; font-family: var(--mono); font-size: 9px; color: var(--faint); line-height: 1.3; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 """
 
 
 def panel(title: str, sub: str, body: str, tight: bool = False) -> str:
     cls = "pb tight" if tight else "pb"
     return (
-        f'<div class="panel"><i class="tick tk1"></i><i class="tick tk2"></i>'
-        f'<i class="tick tk3"></i><i class="tick tk4"></i>'
+        f'<div class="panel">'
         f'<div class="ph"><span>{title}</span><em>{sub}</em></div>'
         f'<div class="{cls}">{body}</div></div>'
     )
@@ -2943,7 +3018,7 @@ def svg_dial(pct: float, lvl: int, label: str, value: str) -> str:
     col = LEVEL_HEX.get(lvl, LEVEL_HEX[0])
 
     return (
-        f'<svg viewBox="0 0 124 118" style="width:100%;max-width:190px;display:block;margin:0 auto">'
+        f'<svg viewBox="0 0 124 118" style="width:100%;max-width:180px;display:block;margin:0 auto">'
         f'<g transform="rotate(135 62 62)">'
         f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="rgba(255,255,255,.09)" stroke-width="9" '
         f'stroke-dasharray="{circ:.1f} {circ + 1:.1f}" stroke-linecap="round"/>'
@@ -2951,16 +3026,16 @@ def svg_dial(pct: float, lvl: int, label: str, value: str) -> str:
         f'stroke-dasharray="{val:.1f} 999" stroke-linecap="round" style="transition:stroke-dasharray .4s"/>'
         f'</g>'
         f'<text x="62" y="58" text-anchor="middle" font-family="Chakra Petch,sans-serif" '
-        f'font-size="34" font-weight="700" fill="{col}">{value}</text>'
-        f'<text x="62" y="76" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="9" '
-        f'letter-spacing="2" fill="#5F7268">{label}</text>'
-        f'<text x="62" y="98" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-size="13" '
-        f'font-weight="700" letter-spacing="2" fill="{col}">{LEVEL_NAME.get(lvl, "SAFE")}</text>'
+        f'font-size="32" font-weight="700" fill="{col}">{value}</text>'
+        f'<text x="62" y="76" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" '
+        f'letter-spacing="1" fill="#5F7268">{label}</text>'
+        f'<text x="62" y="98" text-anchor="middle" font-family="Chakra Petch,sans-serif" font-size="12" '
+        f'font-weight="700" letter-spacing="1" fill="{col}">{LEVEL_NAME.get(lvl, "SAFE")}</text>'
         f'</svg>'
     )
 
 
-def svg_spark(vals: List[float], color: str = "#FFB020", h: int = 42) -> str:
+def svg_spark(vals: List[float], color: str = "#FFB020", h: int = 40) -> str:
     vals = [clamp01(safe_float(v, 0.0)) for v in vals]
     if len(vals) < 2:
         return f'<div style="height:{h}px"></div>'
@@ -2974,13 +3049,13 @@ def svg_spark(vals: List[float], color: str = "#FFB020", h: int = 42) -> str:
     return (
         f'<svg viewBox="0 0 {w} {h}" style="width:100%;height:{h}px;display:block">'
         f'<polyline points="{xs[0]:.1f},{h - 1:.1f} {pts} {xs[-1]:.1f},{h - 1:.1f}" fill="{color}" opacity=".12"/>'
-        f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="1.8"/>'
-        f'<circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="2.4" fill="{color}"/>'
+        f'<polyline points="{pts}" fill="none" stroke="{color}" stroke-width="1.5"/>'
+        f'<circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="2" fill="{color}"/>'
         f'</svg>'
     )
 
 
-def svg_hist(vals: List[float], h: int = 54, hi: float = 8.0) -> str:
+def svg_hist(vals: List[float], h: int = 50, hi: float = 8.0) -> str:
     vals = [safe_float(v, 0.0) for v in vals]
     if not vals:
         return f'<div style="height:{h}px"></div>'
@@ -2993,7 +3068,7 @@ def svg_hist(vals: List[float], h: int = 54, hi: float = 8.0) -> str:
     bars = []
 
     for i, c in enumerate(counts):
-        bh = 38.0 * c / mx
+        bh = 36.0 * c / mx
         col = "#FFB020" if i < 6 else "#48D68C"
         op = 0.45 + 0.55 * c / mx
         bars.append(
@@ -3004,8 +3079,8 @@ def svg_hist(vals: List[float], h: int = 54, hi: float = 8.0) -> str:
     return (
         f'<svg viewBox="0 0 {w} {h}" style="width:100%;height:{h}px;display:block">'
         f'{"".join(bars)}'
-        f'<text x="0" y="{h - 1}" font-family="IBM Plex Mono" font-size="8" fill="#5F7268">0s</text>'
-        f'<text x="{w - 46}" y="{h - 1}" font-family="IBM Plex Mono" font-size="8" fill="#5F7268">{hi:.0f}s lead</text>'
+        f'<text x="0" y="{h - 1}" font-family="IBM Plex Mono" font-size="7" fill="#5F7268">0s</text>'
+        f'<text x="{w - 40}" y="{h - 1}" font-family="IBM Plex Mono" font-size="7" fill="#5F7268">{hi:.0f}s lead</text>'
         f'</svg>'
     )
 
@@ -3073,7 +3148,7 @@ engine: Engine = st.session_state.engine
 with st.sidebar:
     st.markdown(
         '<div class="mark">AGRI<i>//</i><b>SENTINEL</b></div>'
-        '<div class="sub">Proximity Guard · edge build</div>',
+        '<div class="sub">Proximity Guard · Edge Build</div>',
         unsafe_allow_html=True,
     )
 
@@ -3249,8 +3324,8 @@ if lvl >= 3 and nearest is not None:
     nh = nearest["h"]
     nr = nearest["r"]
     banner_html = (
-        '<div class="crit">'
-        '<span style="font-size:22px">⛔</span>'
+        '<div class="crit-banner">'
+        '<span style="font-size:20px;color:var(--crit)">⛔</span>'
         '<div>'
         '<div class="mid lv3">CRITICAL · STOP / EVACUATE</div>'
         f'<div class="mono">{nm.cls.upper()} #{nm.tid} is {safe_float(nr["d_eff"], 999.0):.2f} m from person #{nh.tid} '
@@ -3323,7 +3398,7 @@ with col_video:
             f'<div class="cell"><div class="k">GHOSTS</div><div class="mid">{ds["ghosts"]}</div></div>'
             f'<div class="cell"><div class="k">&lt; THR</div><div class="mid">{ds["lowconf"]}</div></div>'
             '</div>'
-            '<div style="height:8px"></div>'
+            '<div style="height:6px"></div>'
             f'<div class="row"><span class="nm mono">CONF GATE</span><span class="mt">{safe_float(engine.params["conf_thresh"], 0.3):.2f}</span></div>'
             f'{bar(safe_float(engine.params["conf_thresh"], 0.3) * 100.0, "var(--amber)")}'
             f'<div class="row"><span class="nm mono">SNR FIELD AVG</span><span class="mt">{avg_vis:.2f}</span></div>'
@@ -3372,8 +3447,8 @@ with col_rail:
 
     threat_body = (
         dial +
-        f'<div style="text-align:center;margin-top:-4px" class="mono">nearest separation {sep_txt}</div>'
-        '<div style="height:8px"></div>'
+        f'<div style="text-align:center;margin-top:-2px" class="mono">nearest separation {sep_txt}</div>'
+        '<div style="height:6px"></div>'
         '<div class="grid3">'
         f'<div class="cell"><div class="k">ACTIVE TRK</div><div class="mid lv0">{active}</div></div>'
         f'<div class="cell"><div class="k">IN ZONE</div><div class="mid lv2">{in_zone}</div></div>'
@@ -3388,7 +3463,7 @@ with col_rail:
         rr = it["r"]
         top_rows += (
             f'<div class="row"><span class="nm lv{rr["level"]}">#{mm.tid}</span>'
-            f'<span class="mono" style="font-size:10.5px">{mm.cls[:8]} <b style="color:var(--ink)">↔</b> #{hh.tid} {hh.cls[:7]}</span>'
+            f'<span class="mono" style="font-size:10px">{mm.cls[:8]} <b style="color:var(--ink)">↔</b> #{hh.tid} {hh.cls[:7]}</span>'
             f'<span class="mt">{safe_float(rr["d_eff"], 999.0):.1f} m · {max(0.0, safe_float(rr["t_eff"], 999.0)):.1f} s</span></div>'
             f'{bar(safe_float(rr["score"], 0.0), LEVEL_HEX.get(rr["level"], LEVEL_HEX[0]), rr["level"] >= 2)}'
         )
@@ -3403,7 +3478,7 @@ with col_rail:
         arrow = "↑→↓←"[int((deg(safe_float(tr.heading, 0.0)) + 45) // 90) % 4]
         roster_rows += (
             f'<div class="row"><span class="nm lv{tr.level}">{prefix}{tr.tid}</span>'
-            f'<span class="mono" style="font-size:10.5px">{tr.cls[:9]}</span>'
+            f'<span class="mono" style="font-size:10px">{tr.cls[:9]}</span>'
             f'<span class="mt">{arrow} {safe_float(tr.speed, 0.0):.1f} m/s · {deg(safe_float(tr.heading, 0.0)):3.0f}° · '
             f'z {safe_float(tr.stop_dist + 1.0 + engine.params["buffer"], 0.0):.1f} m · {stt}</span></div>'
         )
@@ -3468,7 +3543,7 @@ with tab_events:
             f'<div class="cell"><div class="k">CAUTION</div><div class="mid lv1">{cnt.get("CAUTION", 0)}</div></div>'
             f'<div class="cell"><div class="k">AUTO-BRAKES</div><div class="mid lv0">{auto_cnt}</div></div>'
             '</div>'
-            '<div style="height:8px"></div>'
+            '<div style="height:6px"></div>'
             '<div class="grid3">'
             f'<div class="cell"><div class="k">MEAN MIN DIST</div><div class="mono">{safe_float(df["min_dist"].mean(), 0.0):.2f} m</div></div>'
             f'<div class="cell"><div class="k">BEST LEAD</div><div class="mono">{safe_float(df["lead"].max(), 0.0):.2f} s</div></div>'
@@ -3555,7 +3630,7 @@ with tab_heat:
                 "Hot-zone ranking",
                 "top 8 cells · 1 m resolution",
                 f'<table class="dt"><tr><th>X / Y (m)</th><th>Dose</th><th>Class</th></tr>{rows}</table>'
-                '<div style="height:8px"></div>'
+                '<div style="height:6px"></div>'
                 '<div class="hint"><b style="color:var(--ink)">Operational read-out:</b> top-quartile cells should '
                 'receive a physical exclusion barrier, a posted spotter, or a machine guidance-lane offset. '
                 'Export the register with the CSV for the daily toolbox talk.</div>',
@@ -3576,26 +3651,26 @@ with tab_metrics:
 
     acc_body = (
         '<div class="grid4">'
-        f'<div class="cell"><div class="k">MOTA</div><div class="big lv{0 if safe_float(m["mota"], 0.0) > 0.9 else 1}">{safe_float(m["mota"], 0.0) * 100:.1f}<span style="font-size:16px">%</span></div></div>'
-        f'<div class="cell"><div class="k">IDF1</div><div class="big lv{0 if safe_float(m["idf1"], 0.0) > 0.85 else 1}">{safe_float(m["idf1"], 0.0) * 100:.1f}<span style="font-size:16px">%</span></div></div>'
-        f'<div class="cell"><div class="k">PRECISION</div><div class="big lv{1 if safe_float(m["precision"], 0.0) < 0.9 else 0}">{safe_float(m["precision"], 0.0) * 100:.1f}<span style="font-size:16px">%</span></div></div>'
-        f'<div class="cell"><div class="k">RECALL</div><div class="big lv{1 if safe_float(m["recall"], 0.0) < 0.85 else 0}">{safe_float(m["recall"], 0.0) * 100:.1f}<span style="font-size:16px">%</span></div></div>'
+        f'<div class="cell"><div class="k">MOTA</div><div class="big lv{0 if safe_float(m["mota"], 0.0) > 0.9 else 1}">{safe_float(m["mota"], 0.0) * 100:.1f}<span style="font-size:14px">%</span></div></div>'
+        f'<div class="cell"><div class="k">IDF1</div><div class="big lv{0 if safe_float(m["idf1"], 0.0) > 0.85 else 1}">{safe_float(m["idf1"], 0.0) * 100:.1f}<span style="font-size:14px">%</span></div></div>'
+        f'<div class="cell"><div class="k">PRECISION</div><div class="big lv{1 if safe_float(m["precision"], 0.0) < 0.9 else 0}">{safe_float(m["precision"], 0.0) * 100:.1f}<span style="font-size:14px">%</span></div></div>'
+        f'<div class="cell"><div class="k">RECALL</div><div class="big lv{1 if safe_float(m["recall"], 0.0) < 0.85 else 0}">{safe_float(m["recall"], 0.0) * 100:.1f}<span style="font-size:14px">%</span></div></div>'
         '</div>'
-        '<div style="height:10px"></div>'
+        '<div style="height:8px"></div>'
         '<div class="grid4">'
         f'<div class="cell"><div class="k">ID SWITCHES</div><div class="mid">{int(safe_float(m["idsw"], 0))}</div></div>'
         f'<div class="cell"><div class="k">FRAGMENTATION</div><div class="mid">{int(safe_float(m["frag"], 0))}</div></div>'
         f'<div class="cell"><div class="k">FALSE TRACKS</div><div class="mid">{int(safe_float(m["fp"], 0))}</div></div>'
         f'<div class="cell"><div class="k">MISSED OBJECTS</div><div class="mid">{int(safe_float(m["fn"], 0))}</div></div>'
         '</div>'
-        '<div style="height:10px"></div>'
+        '<div style="height:8px"></div>'
         '<div class="k">MOTA TRACE</div>'
         f'{svg_spark(mota_s, color="#FFB020")}'
-        '<div class="k" style="margin-top:6px">IDF1 TRACE</div>'
+        '<div class="k" style="margin-top:4px">IDF1 TRACE</div>'
         f'{svg_spark(idf1_s, color="#39D7F2")}'
-        '<div class="k" style="margin-top:6px">PRECISION TRACE</div>'
+        '<div class="k" style="margin-top:4px">PRECISION TRACE</div>'
         f'{svg_spark(prec_s, color="#48D68C")}'
-        '<div class="k" style="margin-top:6px">RECALL TRACE</div>'
+        '<div class="k" style="margin-top:4px">RECALL TRACE</div>'
         f'{svg_spark(rec_s, color="#C79BFF")}'
     )
 
@@ -3606,7 +3681,7 @@ with tab_metrics:
         f'<div class="cell"><div class="k">P95 PROCESS</div><div class="mid lv1">{safe_float(p95, 0.0):.1f} ms</div></div>'
         f'<div class="cell"><div class="k">FALSE / HOUR</div><div class="mid lv{2 if fa / hrs > 6 else 0}">{fa / hrs:.1f}</div></div>'
         '</div>'
-        '<div style="height:8px"></div>'
+        '<div style="height:6px"></div>'
         '<div class="k">LEAD-TIME DISTRIBUTION · seconds before closest approach</div>'
         f'{svg_hist(lat)}'
     )
@@ -3673,7 +3748,7 @@ with tab_robust:
         hit = 100.0 * (safe_float(m["recall"], 0.0) ** (1.0 + sev))
         color = "var(--safe)" if hit > 85 else ("var(--cau)" if hit > 70 else "var(--high)")
         cond_rows += (
-            f'<div class="row"><span class="nm" style="min-width:118px">{name}</span>'
+            f'<div class="row"><span class="nm" style="min-width:100px">{name}</span>'
             f'<span class="mt">sev {sev:.2f} · recall proxy {hit:.1f}% · reid {int(safe_float(engine.tracker.stats.get("reid", 0), 0))}</span></div>'
             f'{bar(hit, color)}'
             f'<div class="hint">{note}</div>'
@@ -3688,7 +3763,7 @@ with tab_robust:
         f'<div class="cell"><div class="k">WIND</div><div class="mid">{float(np.hypot(*w.wind)):.1f} m/s</div></div>'
         f'<div class="cell"><div class="k">OCCLUDERS</div><div class="mid">{len(w.circs) + len(w.rects) + len(w.trees)}</div></div>'
         '</div>'
-        '<div style="height:8px"></div>'
+        '<div style="height:6px"></div>'
         '<div class="hint">Push the four environment sliders in the sidebar to stress the front-end live. '
         'The tracker gates, coasting budget and risk thresholds adapt, and the metrics tab shows the accuracy '
         'cost in MOTA / IDSW within a second.</div>'
@@ -3708,7 +3783,7 @@ with tab_reel:
         f'<div class="cell"><div class="k">WINDOW</div><div class="mid">{n_reel * 0.1:.1f} s</div></div>'
         f'<div class="cell"><div class="k">RESOLUTION</div><div class="mid">{REEL_W}×{REEL_H}</div></div>'
         '</div>'
-        '<div style="height:8px"></div>'
+        '<div style="height:6px"></div>'
         '<div class="hint">The app records its own screen: every painted frame is kept in a rolling buffer with '
         'HUD, director captions and live threat level burned in. Let the simulation run for ~20 s, then export '
         'an animated GIF you can drop into a post or safety brief.</div>'
@@ -3793,7 +3868,7 @@ with tab_docs:
     )
 
     relations = (
-        '<div class="mono" style="line-height:1.9">'
+        '<div class="mono" style="line-height:1.8">'
         'd<sub>stop</sub> = v·t<sub>r</sub> + v²/(2a)<br>'
         't<sub>cpa</sub> = −(r·v<sub>rel</sub>)/|v<sub>rel</sub>|²<br>'
         'd<sub>cpa</sub> = |r + v<sub>rel</sub>·t<sub>cpa</sub>|<br>'
@@ -3821,7 +3896,7 @@ with tab_docs:
             f'<div><div class="k">KEY RELATIONS</div>{relations}</div>'
             f'<div><div class="k">WARNING LADDER</div>{ladder}</div>'
             '</div>'
-            '<div style="height:10px"></div>'
+            '<div style="height:8px"></div>'
             '<div class="hint"><b style="color:var(--ink)">Swapping in a real detector:</b> the front-end is a '
             'single method, <span class="mono">Detector.run(world) -&gt; List[Detection]</span>. Replace it with a '
             'Ultralytics / RT-DETR / ONNX wrapper that emits class, bbox, confidence, ground (x,y), visibility '
